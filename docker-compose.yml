@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  random_velechins_bot:
+    build: .
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    restart: always
