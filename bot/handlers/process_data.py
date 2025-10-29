@@ -14,8 +14,8 @@ async def send_graph(message: Message, k0, k1, arr, state: FSMContext):
     caption=f"График распределения суммы случайных величин\n\n"
     
     if k0 != k1:
-        caption += f"{k0} ≤ k ≤ {k1}\nМассив: {arr}"
-    else:  caption += f"k = {k1}\nМассив: {arr}"
+        caption += f"{k0} ≤ k ≤ {k1}\nВероятности: {arr}"
+    else:  caption += f"k = {k1}\nВероятности: {arr}"
     
     photo = FSInputFile(filename)
     await message.bot.send_photo(
