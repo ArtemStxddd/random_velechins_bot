@@ -1,18 +1,46 @@
-from aiogram import Router, F
-from aiogram.types import Message
-from aiogram.fsm.context import FSMContext
+import os
 import numpy as np
-from bot.handlers.process_data import send_graph
+
+from aiogram import Router, F
+from aiogram.types import Message, FSInputFile
+from aiogram.fsm.context import FSMContext
+from aiogram.types import ReplyKeyboardRemove
+
+from bot.utils.generate_random_velechins import pew
 from bot.states.number_Input import NumberInput
 
 router = Router()
 
+async def send_graph(message: Message, k0, k1, arr):
+    filename = pew(arr, k0, k1, message.from_user.id)
+    
+    caption=f"График распределения суммы случайных величин\n\n"
+    
+    if k0 != k1:
+        caption += f"{k0} <= k <= {k1}\nВероятности: {arr}"
+    else:  caption += f"k = {k1}\nВероятности: {arr}"
+    
+    photo = FSInputFile(filename)
+    await message.bot.send_photo(
+        chat_id=message.from_user.id,
+        photo=photo,
+        caption=caption
+    )
 
-@router.message(F.text.lower() == "/start")
+    await message.answer("Вы можете выбрать новые вероятности, введя команду /pmf или выбрать другой режим работы, введя команду /start")
+    await message.answer("Также, вы можете указать новые значения k для текущих вероятностей.")
+    
+    if os.path.exists(filename):
+        os.remove(filename)
+
+
+@router.message(F.text.lower() == "/pmf")
+@router.message(F.text.lower() == "первый")
 async def cmd_start(message: Message, state: FSMContext):
     await state.set_state(NumberInput.waiting_for_array)
     await message.answer(
-        "Алгоритм рассчитывает распределение вероятностей для суммы нескольких независимых одинаково распределённых дискретных случайных величин."  
+        "Алгоритм рассчитывает распределение вероятностей для суммы нескольких независимых одинаково распределённых дискретных случайных величин." ,
+        reply_markup=ReplyKeyboardRemove()
     )
     await message.answer(
         "Введите вероятности через пробел;\n"
@@ -60,9 +88,9 @@ async def get_k(message: Message, state: FSMContext):
             if k < 1 or k > len(arr):
                 await message.answer(f"Число k должно быть в диапазоне от 1 до {len(arr)}.")
                 return
-            await send_graph(message, k, k, arr, state)
-            await message.answer(f"Укажите новое(ые) значение(я) k. Если хотите обработать новые вероятности напишите /start")
+            await send_graph(message, k, k, arr)
             await state.set_state(NumberInput.waiting_for_k)
+           
 
         elif len(tokens) == 2:
             k0, k1 = int(tokens[0]), int(tokens[1])
@@ -70,9 +98,9 @@ async def get_k(message: Message, state: FSMContext):
                 await message.answer(f"Диапазон должен быть в пределах от 1 до {len(arr)}. Укажите k снова.")
                 return
             
-            await send_graph(message, k0, k1, arr, state)
-            await message.answer(f"Укажите новое(ые) значение(я) k. Если хотите обработать новый массив напишите /start")
+            await send_graph(message, k0, k1, arr)
             await state.set_state(NumberInput.waiting_for_k)
+            
 
         else:
             await message.answer(
@@ -92,3 +120,5 @@ async def get_k(message: Message, state: FSMContext):
             f" - Диапазон: 1 {len(arr)}\n\n"
             "Укажите k снова."
         )
+
+
